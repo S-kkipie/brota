@@ -14,10 +14,10 @@ one repo / one deploy > microservices.
 ## Stack (locked — do not swap without asking)
 
 - **Next.js (App Router) + TypeScript** — frontend (landing + read-only demo) AND API routes.
-- **Postgres (Supabase) + Drizzle ORM** — `db/schema.ts` is the source of truth.
+- **Postgres (Supabase) + Drizzle ORM** — `src/db/schema.ts` is the source of truth.
 - **Gemini `@google/genai`** (gemini-2.5-flash) — NLU + coach, via function-calling.
 - **Stellar `@stellar/stellar-sdk` + DeFindex SDK** — testnet. DeFindex vault = the yield.
-- **Twilio WhatsApp Sandbox** — inbound webhook at `app/api/whatsapp/route.ts`.
+- **Twilio WhatsApp Sandbox** — inbound webhook at `src/app/api/whatsapp/route.ts`.
 - **logtape `@logtape/logtape`** — all logging. No `console.log` in committed code.
 - **Tailwind + shadcn/ui + recharts** — web UI.
 - Deploy: **Railway** (`next start`, persistent Node — NOT Vercel serverless).
@@ -26,11 +26,14 @@ Package manager: **pnpm**. Node 24.
 
 ## Architecture rules
 
+- All source lives under `src/` (`src/app`, `src/lib`, `src/db`, `src/instrumentation.ts`).
+  Config files (`next.config.ts`, `drizzle.config.ts`, `tsconfig.json`, …) and `public/` stay
+  at the repo root. The `@/*` import alias maps to `./src/*`.
 - One Next.js app. No separate backend service. Webhook + Stellar live in route handlers.
 - Web pages are read-only demo: prefer **RSC** fetching the DB directly. No client data layer
   (no tanstack-query/form in MVP).
-- Business logic lives in `lib/actions/*` (one file per intent), not in route handlers.
-- Shared clients in `lib/`: `db.ts`, `gemini.ts`, `stellar.ts`, `defindex.ts`, `log.ts`.
+- Business logic lives in `src/lib/actions/*` (one file per intent), not in route handlers.
+- Shared clients in `src/lib/`: `db.ts`, `gemini.ts`, `stellar.ts`, `defindex.ts`, `log.ts`.
 
 ## Code style (TypeScript) — non-negotiable
 
@@ -57,7 +60,7 @@ Package manager: **pnpm**. Node 24.
 - Verify before claiming done: `pnpm build` (or `pnpm typecheck`) must pass. Run it; show output.
 - Small, focused commits. Conventional Commits. Spanish or English body OK.
 - Do not introduce dropped deps (Elysia, better-auth, monorepo tooling) without asking.
-- When touching the data model, update `db/schema.ts` and generate a Drizzle migration.
+- When touching the data model, update `src/db/schema.ts` and generate a Drizzle migration.
 
 ## Commands
 
