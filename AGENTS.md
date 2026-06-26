@@ -32,6 +32,14 @@ Package manager: **pnpm**. Node 24.
 - Business logic lives in `lib/actions/*` (one file per intent), not in route handlers.
 - Shared clients in `lib/`: `db.ts`, `gemini.ts`, `stellar.ts`, `defindex.ts`, `log.ts`.
 
+## Code style (TypeScript) — non-negotiable
+
+- **Never** use `any`. Type it properly, or use `unknown` + a real narrowing check.
+- **Never** use `as unknown as` (or any double-cast escape hatch). If a cast feels
+  necessary, the types are wrong — fix the types instead.
+- **Never** create `index.ts` (or `index.tsx`) barrel files. Name every module by what it
+  does (e.g. `dispatch.ts`, not `actions/index.ts`) and import the explicit path.
+
 ## Security — non-negotiable
 
 - **AI never holds keys or moves funds autonomously.** Gemini only interprets and drafts

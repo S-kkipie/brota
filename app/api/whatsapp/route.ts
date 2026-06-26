@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, messages } from "@/db/schema";
 import { classifyIntent } from "@/lib/gemini";
-import { dispatch } from "@/lib/actions";
+import { dispatch } from "@/lib/actions/dispatch";
 import { logger } from "@/lib/log";
 
 const log = logger("whatsapp");
