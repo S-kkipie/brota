@@ -26,6 +26,12 @@ target/
 .vscode/
 *.swp
 
+# SQLite (local dev DB — never commit)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # Misc
 coverage/
 .cache/

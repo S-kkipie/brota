@@ -1,21 +1,9 @@
-import { configure, getConsoleSink, getLogger } from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 
-let isConfigured = false;
-
-export async function setupLogtape() {
-  if (isConfigured) return;
-  await configure({
-    sinks: {
-      console: getConsoleSink(),
-    },
-    loggers: [
-      { category: "app", sinks: ["console"] },
-      { category: "webhook", sinks: ["console"] },
-      { category: "db", sinks: ["console"] },
-      { category: "gemini", sinks: ["console"] },
-    ],
-  });
-  isConfigured = true;
-}
-
-export const log = getLogger("app");
+/**
+ * App logger. logtape is configured exactly once at server startup in
+ * src/instrumentation.ts (the Next.js `register()` hook). Do NOT call
+ * configure() here — a second configure() would clobber that setup. Category
+ * must stay under "brota" so it matches the config in instrumentation.ts.
+ */
+export const log = getLogger("brota");

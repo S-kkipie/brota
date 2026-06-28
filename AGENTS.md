@@ -14,10 +14,12 @@ one repo / one deploy > microservices.
 ## Stack (locked — do not swap without asking)
 
 - **Next.js (App Router) + TypeScript** — frontend (landing + read-only demo) AND API routes.
-- **Postgres (Supabase) + Drizzle ORM** — `src/db/schema.ts` is the source of truth.
+- **SQLite (libSQL) + Drizzle ORM** — `src/db/schema.ts` is the source of truth.
+  Local dev = `file:./local.db`; prod = a libSQL URL. The DB file is gitignored.
 - **Gemini `@google/genai`** (gemini-2.5-flash) — NLU + coach, via function-calling.
 - **Stellar `@stellar/stellar-sdk` + DeFindex SDK** — testnet. DeFindex vault = the yield.
-- **Twilio WhatsApp Sandbox** — inbound webhook at `src/app/api/whatsapp/route.ts`.
+- **Meta WhatsApp Cloud API** — inbound webhook at `src/app/api/whatsapp/route.ts`
+  (GET = subscription verify, POST = inbound messages). Send via `src/lib/whatsapp.ts`.
 - **logtape `@logtape/logtape`** — all logging. No `console.log` in committed code.
 - **Tailwind + shadcn/ui + recharts** — web UI.
 - Deploy: **Railway** (`next start`, persistent Node — NOT Vercel serverless).
@@ -51,8 +53,9 @@ Package manager: **pnpm**. Node 24.
   at rest** (AES-256-GCM, key in `WALLET_ENCRYPTION_KEY` env). PIN stored as hash only.
 - Do **not** claim "non-custodial" anywhere while keys live server-side. Passkey/smart-wallet
   is roadmap, not MVP.
-- **No secrets in the repo.** `GEMINI_API_KEY`, `WALLET_ENCRYPTION_KEY`, Twilio creds, DB URL
-  live in `.env` (gitignored) and Railway only. Keep `.env.example` updated with keys, no values.
+- **No secrets in the repo.** `GEMINI_API_KEY`, `WALLET_ENCRYPTION_KEY`, `WHATSAPP_ACCESS_TOKEN`,
+  `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, DB URL live in `.env` (gitignored) and Railway only. Keep
+  `.env.example` updated with keys, no values. Never commit `local.db` (the SQLite file).
 - Stellar **testnet only** until explicitly switched. Never point at mainnet in code/tests.
 
 ## Workflow

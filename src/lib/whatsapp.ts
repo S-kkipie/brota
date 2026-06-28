@@ -1,9 +1,11 @@
+import { log } from "@/lib/log";
+
 export async function sendWhatsAppMessage(to: string, message: string) {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
   if (!token || !phoneNumberId) {
-    console.warn(`[WhatsApp MOCK] To: ${to} | Message: ${message}`);
+    log.warn("WhatsApp send skipped (no creds) — mock", { to, message });
     return;
   }
 
@@ -28,6 +30,6 @@ export async function sendWhatsAppMessage(to: string, message: string) {
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error("Failed to send WhatsApp message:", errorText);
+    log.error("WhatsApp send failed", { status: res.status, errorText });
   }
 }

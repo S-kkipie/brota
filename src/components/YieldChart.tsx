@@ -2,7 +2,9 @@
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-export default function YieldChart({ data }: { data: any[] }) {
+export type YieldPoint = { date: string; value: number };
+
+export default function YieldChart({ data }: { data: YieldPoint[] }) {
   return (
     <div className="h-[300px] w-full mt-6">
       <ResponsiveContainer width="100%" height="100%">
