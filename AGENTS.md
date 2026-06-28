@@ -17,7 +17,11 @@ one repo / one deploy > microservices.
 - **SQLite (libSQL) + Drizzle ORM** — `src/db/schema.ts` is the source of truth.
   Local dev = `file:./local.db`; prod = a libSQL URL. The DB file is gitignored.
 - **Gemini `@google/genai`** (gemini-2.5-flash) — NLU + coach, via function-calling.
-- **Stellar `@stellar/stellar-sdk` + DeFindex SDK** — testnet. DeFindex vault = the yield.
+- **Stellar `@stellar/stellar-sdk` (v16) + DeFindex `@defindex/sdk`** — testnet. The DeFindex
+  REST SDK builds unsigned XDR; the server signs it with the user's keypair and submits via
+  Soroban RPC (`lib/defindex.ts`). The vault = the yield. Without `DEFINDEX_API_KEY` set,
+  `lib/defindex.ts` runs in logged mock mode. Do NOT use the `defindex-sdk` package (it pins
+  stellar-sdk v12 and pulls `@soroban-react/*` React libs).
 - **Meta WhatsApp Cloud API** — inbound webhook at `src/app/api/whatsapp/route.ts`
   (GET = subscription verify, POST = inbound messages). Send via `src/lib/whatsapp.ts`.
 - **logtape `@logtape/logtape`** — all logging. No `console.log` in committed code.
