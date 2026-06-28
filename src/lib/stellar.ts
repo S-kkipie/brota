@@ -7,6 +7,8 @@ export const rpcServer = new rpc.Server(
 export const networkPassphrase =
   process.env.STELLAR_NETWORK === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
 
+export const isTestnet = networkPassphrase !== Networks.PUBLIC;
+
 /**
  * New custodial-with-limits keypair. The caller must encrypt `secret` at rest
  * with `encryptSecret` from lib/crypto.ts before persisting — never store the

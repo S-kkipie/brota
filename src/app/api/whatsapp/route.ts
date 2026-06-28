@@ -5,6 +5,7 @@ import { classifyIntent } from "@/lib/gemini";
 import { dispatch } from "@/lib/actions/dispatch";
 import { log } from "@/lib/log";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { createWalletForUser } from "@/lib/wallet";
 
 export const runtime = "nodejs";
 
@@ -67,6 +68,8 @@ export async function POST(req: Request): Promise<Response> {
       }).returning();
       user = inserted[0];
       log.info("new user", { userId: user.id });
+      // Custodial-with-limits wallet on first contact (encrypted seed at rest).
+      await createWalletForUser(user.id);
     }
 
     await db.insert(messages).values({ 
