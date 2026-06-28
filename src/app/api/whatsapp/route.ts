@@ -3,74 +3,98 @@ import { db } from "@/lib/db";
 import { users, messages } from "@/db/schema";
 import { classifyIntent } from "@/lib/gemini";
 import { dispatch } from "@/lib/actions/dispatch";
-import { logger } from "@/lib/log";
+import { log } from "@/lib/log";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
-const log = logger("whatsapp");
-
-// Webhook hits an external Stellar/Gemini path — keep it on the Node runtime,
-// never edge/serverless-edge.
 export const runtime = "nodejs";
 
-/** Minimal XML escaping for TwiML message bodies. */
-function xmlEscape(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
+/**
+ * Handle Meta Webhook Verification (GET).
+ */
+export async function GET(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const mode = url.searchParams.get("hub.mode");
+  const token = url.searchParams.get("hub.verify_token");
+  const challenge = url.searchParams.get("hub.challenge");
 
-function twiml(message: string): Response {
-  const body = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${xmlEscape(
-    message,
-  )}</Message></Response>`;
-  return new Response(body, { headers: { "Content-Type": "text/xml" } });
+  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+
+  if (mode === "subscribe" && token === verifyToken) {
+    log.info("Webhook verified successfully!");
+    return new Response(challenge, { status: 200 });
+  }
+
+  return new Response("Forbidden", { status: 403 });
 }
 
 /**
- * Twilio WhatsApp inbound webhook.
- *
- * TODO(D2) SECURITY: validate the `X-Twilio-Signature` header with
- * twilio.validateRequest before trusting any field. Do not ship to the demo
- * without it — right now this endpoint accepts unauthenticated POSTs.
+ * Meta WhatsApp Cloud API inbound webhook.
  */
 export async function POST(req: Request): Promise<Response> {
-  const form = await req.formData();
-  const from = String(form.get("From") ?? "");
-  const body = String(form.get("Body") ?? "").trim();
-
-  if (!from || !body) {
-    return twiml("No recibí tu mensaje. ¿Puedes intentarlo de nuevo?");
-  }
-
-  log.info("inbound", { from, body });
-
   try {
+    const body = await req.json();
+
+    // Check if it's a WhatsApp status update or actual message
+    const entry = body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messagesArray = value?.messages;
+
+    if (!messagesArray || messagesArray.length === 0) {
+      return new Response("EVENT_RECEIVED", { status: 200 });
+    }
+
+    const message = messagesArray[0];
+    const from = message.from;
+    const textBody = message.text?.body?.trim();
+
+    if (!from || !textBody) {
+      return new Response("EVENT_RECEIVED", { status: 200 });
+    }
+
+    log.info("inbound", { from, textBody });
+
     // Find-or-create the user keyed by WhatsApp number.
     let user = await db.query.users.findFirst({
       where: eq(users.whatsappNumber, from),
     });
+    
     if (!user) {
-      [user] = await db.insert(users).values({ whatsappNumber: from }).returning();
+      const inserted = await db.insert(users).values({ 
+        id: "usr_" + Date.now().toString(),
+        whatsappNumber: from,
+        createdAt: new Date()
+      }).returning();
+      user = inserted[0];
       log.info("new user", { userId: user.id });
     }
 
-    await db.insert(messages).values({ userId: user.id, direction: "in", body });
+    await db.insert(messages).values({ 
+      id: "msg_" + Date.now().toString(),
+      userId: user.id, 
+      direction: "in", 
+      body: textBody,
+      createdAt: new Date()
+    });
 
-    const intent = await classifyIntent(body);
+    const intent = await classifyIntent(textBody);
     const result = await dispatch({ user, intent });
 
     await db.insert(messages).values({
+      id: "msg_" + Date.now().toString() + "_out",
       userId: user.id,
       direction: "out",
       body: result.reply,
       intent: intent.intent,
+      createdAt: new Date()
     });
 
-    return twiml(result.reply);
+    // Send reply via Meta API
+    await sendWhatsAppMessage(from, result.reply);
+
+    return new Response("EVENT_RECEIVED", { status: 200 });
   } catch (err) {
     log.error("webhook failed", { err: String(err) });
-    return twiml("Tuvimos un problema procesando tu mensaje. Inténtalo en un momento 🙏.");
+    return new Response("Internal Server Error", { status: 500 });
   }
 }

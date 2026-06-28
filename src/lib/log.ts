@@ -1,15 +1,21 @@
-import { getLogger, type Logger } from "@logtape/logtape";
+import { configure, getConsoleSink, getLogger } from "@logtape/logtape";
 
-/**
- * Structured logging via logtape. Configuration happens once in
- * `instrumentation.ts` (`register()`); here we only hand out loggers.
- *
- * Usage:
- *   const log = logger("whatsapp");
- *   log.info("inbound message", { from });
- *
- * Never use console.log in committed code (see AGENTS.md).
- */
-export function logger(...category: string[]): Logger {
-  return getLogger(["brota", ...category]);
+let isConfigured = false;
+
+export async function setupLogtape() {
+  if (isConfigured) return;
+  await configure({
+    sinks: {
+      console: getConsoleSink(),
+    },
+    loggers: [
+      { category: "app", sinks: ["console"] },
+      { category: "webhook", sinks: ["console"] },
+      { category: "db", sinks: ["console"] },
+      { category: "gemini", sinks: ["console"] },
+    ],
+  });
+  isConfigured = true;
 }
+
+export const log = getLogger("app");

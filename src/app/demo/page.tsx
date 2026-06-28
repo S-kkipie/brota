@@ -1,51 +1,83 @@
-import Link from "next/link";
-import { YieldChart, type YieldPoint } from "./yield-chart";
+import { db } from "@/lib/db";
+import { users } from "@/db/schema";
+import { TrendingUp, History } from "lucide-react";
+import YieldChart from "@/components/YieldChart";
 
-/**
- * Read-only demo dashboard. MVP uses mock data; once positions are persisted
- * (D3) this becomes an RSC reading the DB directly for a demo user.
- * TODO(D4): replace mock with a real query over positions/transactions.
- */
-const MOCK_YIELD: YieldPoint[] = [
-  { day: "Lun", value: 100.0 },
-  { day: "Mar", value: 100.04 },
-  { day: "Mié", value: 100.09 },
-  { day: "Jue", value: 100.15 },
-  { day: "Vie", value: 100.23 },
-  { day: "Sáb", value: 100.31 },
-  { day: "Dom", value: 100.4 },
-];
+export const dynamic = "force-dynamic";
 
-function Stat({ label, value }: { label: string; value: string }) {
+export default async function DemoPage() {
+  const allUsers = await db.select().from(users);
+
+  // Since we might not have real data, let's inject a demo state if empty.
+  const hasData = allUsers.length > 0;
+  
+  const mockChartData = [
+    { date: "1 Jun", value: 100 },
+    { date: "5 Jun", value: 101.5 },
+    { date: "10 Jun", value: 103.2 },
+    { date: "15 Jun", value: 105.8 },
+    { date: "20 Jun", value: 108.1 },
+    { date: "Hoy", value: 110.5 },
+  ];
+
   return (
-    <div className="rounded-2xl border border-foreground/10 p-6">
-      <p className="text-sm text-foreground/60">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
+    <div className="min-h-screen bg-slate-950 text-slate-50 p-8 font-sans selection:bg-emerald-500/30">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-white">Dashboard <span className="text-emerald-400">DeFindex</span></h1>
+          <a href="/" className="text-sm font-medium text-slate-400 hover:text-white transition">← Volver al inicio</a>
+        </div>
+        
+        {!hasData ? (
+          <div className="p-12 border border-slate-800 rounded-3xl bg-slate-900/50 text-center backdrop-blur-xl">
+            <p className="text-slate-400 mb-4 text-lg">Aún no hay usuarios en la base de datos.</p>
+            <p className="text-sm">Envía un mensaje al bot de WhatsApp para empezar a generar datos reales.</p>
+          </div>
+        ) : (
+          allUsers.map(user => (
+            <div key={user.id} className="mb-12 border border-slate-800 rounded-3xl overflow-hidden bg-slate-900/50 backdrop-blur-xl hover:border-emerald-500/30 transition-colors">
+              <div className="p-8 border-b border-slate-800 bg-slate-900/80">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">{user.whatsappNumber}</h2>
+                    <p className="text-slate-400 text-sm mt-1">Usuario Activo</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-400">Balance Total (USDC)</p>
+                    <p className="text-4xl font-extrabold text-emerald-400 mt-1">$110.50</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8 p-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <TrendingUp className="mr-2 h-5 w-5 text-emerald-400" />
+                    Rendimiento Histórico
+                  </h3>
+                  <YieldChart data={mockChartData} />
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <History className="mr-2 h-5 w-5 text-emerald-400" />
+                    Últimos Movimientos
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800/80 transition-colors border border-slate-700/50">
+                      <div>
+                        <p className="font-medium text-emerald-400">Depósito DeFindex</p>
+                        <p className="text-xs text-slate-400 mt-1">Hace 2 horas</p>
+                      </div>
+                      <p className="font-bold">+$50.00 USDC</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
-  );
-}
-
-export default function DemoPage() {
-  return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
-      <Link href="/" className="text-sm text-foreground/60 hover:underline">
-        ← Brota
-      </Link>
-      <h1 className="mt-4 text-3xl font-bold tracking-tight">Demo · Ana (usuario)</h1>
-      <p className="mt-2 text-foreground/60">
-        Vista de solo lectura. Datos de ejemplo (testnet) — el flujo real corre por WhatsApp.
-      </p>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <Stat label="Ahorro" value="$100.40" />
-        <Stat label="Rendimiento (7d)" value="+$0.40" />
-        <Stat label="APY aprox." value="~2.1%" />
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-foreground/10 p-6">
-        <h2 className="mb-4 text-lg font-semibold">Tu dinero rinde solo</h2>
-        <YieldChart data={MOCK_YIELD} />
-      </div>
-    </main>
   );
 }

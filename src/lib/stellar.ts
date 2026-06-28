@@ -1,28 +1,59 @@
-import { Keypair, Networks } from "@stellar/stellar-sdk";
-import { STELLAR_NETWORK, STELLAR_RPC_URL, STELLAR_HORIZON_URL } from "@/lib/env";
-import { encryptSecret } from "@/lib/crypto";
+import { Keypair, rpc, Networks } from "@stellar/stellar-sdk";
+import crypto from 'crypto';
 
-/**
- * Stellar config + custodial keypair helpers. TESTNET only until explicitly
- * switched (see AGENTS.md). The secret seed is encrypted before it ever
- * touches the database.
- */
+export const rpcServer = new rpc.Server(
+  process.env.STELLAR_RPC_URL || "https://soroban-testnet.stellar.org"
+);
+
 export const networkPassphrase =
-  STELLAR_NETWORK === "public" ? Networks.PUBLIC : Networks.TESTNET;
+  process.env.STELLAR_NETWORK === "mainnet"
+    ? Networks.PUBLIC
+    : Networks.TESTNET;
 
-export const rpcUrl = STELLAR_RPC_URL;
-export const horizonUrl = STELLAR_HORIZON_URL;
+const ALGORITHM = 'aes-256-gcm';
 
-export interface NewWallet {
-  publicKey: string;
-  encryptedSecret: string;
+export function encryptSecret(secret: string): string {
+  const keyHex = process.env.WALLET_ENCRYPTION_KEY;
+  if (!keyHex || keyHex.length !== 64) {
+    throw new Error("WALLET_ENCRYPTION_KEY must be a 64 character hex string");
+  }
+  const key = Buffer.from(keyHex, 'hex');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  
+  let encrypted = cipher.update(secret, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
 }
 
-/** Generate a fresh keypair and return the public key + encrypted secret. */
-export function createWallet(): NewWallet {
-  const kp = Keypair.random();
+export function decryptSecret(encryptedPayload: string): string {
+  const keyHex = process.env.WALLET_ENCRYPTION_KEY;
+  if (!keyHex || keyHex.length !== 64) {
+    throw new Error("WALLET_ENCRYPTION_KEY must be a 64 character hex string");
+  }
+  const key = Buffer.from(keyHex, 'hex');
+  
+  const parts = encryptedPayload.split(':');
+  if (parts.length !== 3) throw new Error("Invalid encrypted payload format");
+  
+  const iv = Buffer.from(parts[0], 'hex');
+  const authTag = Buffer.from(parts[1], 'hex');
+  const encrypted = parts[2];
+  
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
+  
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+export function generateWallet() {
+  const keypair = Keypair.random();
   return {
-    publicKey: kp.publicKey(),
-    encryptedSecret: encryptSecret(kp.secret()),
+    publicKey: keypair.publicKey(),
+    secret: keypair.secret(),
   };
 }

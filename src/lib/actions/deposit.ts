@@ -1,7 +1,5 @@
-import { logger } from "@/lib/log";
+import { log } from "@/lib/log";
 import type { ActionContext, ActionResult } from "@/lib/actions/types";
-
-const log = logger("action", "deposit");
 
 /**
  * Deposit flow (custodial-with-limits). MVP shape:
