@@ -4,7 +4,11 @@ import { users, messages } from "@/db/schema";
 import { classifyIntent } from "@/lib/gemini";
 import { dispatch } from "@/lib/actions/dispatch";
 import { log } from "@/lib/log";
-import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import {
+  sendWhatsAppMessage,
+  verifyMetaSignature,
+  isMetaSignatureConfigured,
+} from "@/lib/whatsapp";
 import { createWalletForUser } from "@/lib/wallet";
 
 export const runtime = "nodejs";
@@ -33,7 +37,21 @@ export async function GET(req: Request): Promise<Response> {
  */
 export async function POST(req: Request): Promise<Response> {
   try {
-    const body = await req.json();
+    // Read the RAW body once — needed verbatim for HMAC signature verification.
+    const rawBody = await req.text();
+    const signature = req.headers.get("x-hub-signature-256");
+
+    if (isMetaSignatureConfigured()) {
+      if (!verifyMetaSignature(rawBody, signature)) {
+        log.warn("rejected webhook: invalid X-Hub-Signature-256");
+        return new Response("Forbidden", { status: 403 });
+      }
+    } else {
+      // No app secret configured (local dev). Accept but make the gap loud.
+      log.warn("WHATSAPP_APP_SECRET unset — skipping signature check (dev only)");
+    }
+
+    const body = JSON.parse(rawBody);
 
     // Check if it's a WhatsApp status update or actual message
     const entry = body.entry?.[0];

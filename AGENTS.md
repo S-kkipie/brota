@@ -54,8 +54,11 @@ Package manager: **pnpm**. Node 24.
 - Do **not** claim "non-custodial" anywhere while keys live server-side. Passkey/smart-wallet
   is roadmap, not MVP.
 - **No secrets in the repo.** `GEMINI_API_KEY`, `WALLET_ENCRYPTION_KEY`, `WHATSAPP_ACCESS_TOKEN`,
-  `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, DB URL live in `.env` (gitignored) and Railway only. Keep
-  `.env.example` updated with keys, no values. Never commit `local.db` (the SQLite file).
+  `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, DB URL live in `.env` (gitignored) and
+  Railway only. Keep `.env.example` updated with keys, no values. Never commit `local.db`.
+- **Verify inbound webhooks.** The POST handler checks Meta's `X-Hub-Signature-256` (HMAC-SHA256
+  of the raw body with `WHATSAPP_APP_SECRET`). It is enforced whenever the secret is set; set it
+  in every non-local deploy or the endpoint accepts unauthenticated POSTs.
 - Stellar **testnet only** until explicitly switched. Never point at mainnet in code/tests.
 
 ## Workflow
