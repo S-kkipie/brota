@@ -34,7 +34,34 @@ Clasifica el mensaje del usuario en una intención y responde SOLO con JSON vál
 - "coach": pregunta educativa o conversación general. Responde en "reply".
 - "unknown": no entiendes. Pide aclaración amable en "reply".`;
 
+/**
+ * Offline keyword classifier used when GEMINI_API_KEY is unset, so the demo
+ * runs locally with zero external keys. Crude on purpose — real NLU is Gemini.
+ */
+function localClassify(message: string): Intent {
+  const text = message.toLowerCase();
+  const amountMatch = text.match(/\d+(?:[.,]\d+)?/);
+  const amountUsdc = amountMatch ? Number(amountMatch[0].replace(",", ".")) : null;
+
+  if (/ahorr|deposit|guard|invert|met[eo]/.test(text)) {
+    return { intent: "deposit", amountUsdc, reply: "" };
+  }
+  if (/saldo|cu[aá]nt|balance|tengo|rendimiento|gan/.test(text)) {
+    return { intent: "balance", amountUsdc: null, reply: "" };
+  }
+  return {
+    intent: "coach",
+    amountUsdc: null,
+    reply: "Soy Brota 🌱. Puedo ayudarte a ahorrar en dólares. Escribe \"ahorra 50\" o \"saldo\".",
+  };
+}
+
 export async function classifyIntent(message: string): Promise<Intent> {
+  if (!process.env.GEMINI_API_KEY) {
+    log.warn("GEMINI_API_KEY unset — using local keyword classifier (dev only)");
+    return localClassify(message);
+  }
+
   const res = await client().models.generateContent({
     model: MODEL,
     contents: message,

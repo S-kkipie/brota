@@ -1,18 +1,34 @@
+import { getWalletForUser } from "@/lib/wallet";
+import { getVaultPosition } from "@/lib/defindex";
+import { optionalEnv } from "@/lib/env";
 import { log } from "@/lib/log";
 import type { ActionContext, ActionResult } from "@/lib/actions/types";
 
 /**
- * Balance flow. MVP: read the cached position snapshot (refreshed from the
- * DeFindex vault) and report savings + yield.
- *
- * STATUS: stub until DeFindex readPosition is verified (D1) and positions are
- * persisted (D3).
+ * Balance flow. Reads the user's live DeFindex vault position. No PIN — reading
+ * a balance moves no funds.
  */
 export async function handleBalance(ctx: ActionContext): Promise<ActionResult> {
   log.info("balance requested", { userId: ctx.user.id });
 
-  // TODO(D3): read positions snapshot for ctx.user and format yield.
+  const wallet = await getWalletForUser(ctx.user.id);
+  if (!wallet) {
+    return { reply: 'Aún no tienes ahorros. Escribe "ahorra 50" para empezar 🌱.' };
+  }
+
+  const vaultId = optionalEnv("DEFINDEX_VAULT_ID");
+  if (!vaultId) {
+    return { reply: "Tu cuenta de ahorro aún se está configurando. Inténtalo en un rato." };
+  }
+
+  const { shares, valueUsdc } = await getVaultPosition(wallet.stellarPublicKey, vaultId);
+  if (valueUsdc <= 0 && shares <= 0) {
+    return { reply: 'Todavía no tienes saldo en tu ahorro. Escribe "ahorra 50" para empezar.' };
+  }
+
   return {
-    reply: "Tu resumen de ahorro y rendimiento estará aquí muy pronto 🚧.",
+    reply:
+      `Tu ahorro vale ${valueUsdc.toFixed(2)} USDC 🌱 ` +
+      `y sigue creciendo con el rendimiento del vault. ¡Bien hecho!`,
   };
 }

@@ -10,6 +10,7 @@ import {
   isMetaSignatureConfigured,
 } from "@/lib/whatsapp";
 import { createWalletForUser } from "@/lib/wallet";
+import { continuePending } from "@/lib/conversation";
 
 export const runtime = "nodejs";
 
@@ -98,20 +99,32 @@ export async function POST(req: Request): Promise<Response> {
       createdAt: new Date()
     });
 
-    const intent = await classifyIntent(textBody);
-    const result = await dispatch({ user, intent });
+    // If the user is mid-flow (e.g. entering a PIN), this message is the awaited
+    // input — handle it before classifying intent. Otherwise classify + dispatch.
+    const pendingResult = await continuePending(user, textBody);
+    let reply: string;
+    let intentName: string;
+    if (pendingResult) {
+      reply = pendingResult.reply;
+      intentName = "pin_flow";
+    } else {
+      const intent = await classifyIntent(textBody);
+      const result = await dispatch({ user, intent });
+      reply = result.reply;
+      intentName = intent.intent;
+    }
 
     await db.insert(messages).values({
       id: "msg_" + Date.now().toString() + "_out",
       userId: user.id,
       direction: "out",
-      body: result.reply,
-      intent: intent.intent,
+      body: reply,
+      intent: intentName,
       createdAt: new Date()
     });
 
     // Send reply via Meta API
-    await sendWhatsAppMessage(from, result.reply);
+    await sendWhatsAppMessage(from, reply);
 
     return new Response("EVENT_RECEIVED", { status: 200 });
   } catch (err) {

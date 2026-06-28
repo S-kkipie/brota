@@ -8,6 +8,13 @@
       "when": 1782594665878,
       "tag": "0000_fluffy_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782624099081,
+      "tag": "0001_gigantic_sprite",
+      "breakpoints": true
     }
   ]
 }

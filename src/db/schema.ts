@@ -55,6 +55,24 @@ export const positions = sqliteTable("positions", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
+/**
+ * In-flight multi-message flow for a user (e.g. PIN entry before a deposit).
+ * One row per user — the webhook checks this BEFORE classifying intent, so the
+ * next inbound message is treated as the awaited input, not a new command.
+ */
+export const pendingActions = sqliteTable("pending_actions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().unique().references(() => users.id),
+  /** 'AWAIT_NEW_PIN' | 'CONFIRM_NEW_PIN' | 'AWAIT_PIN' */
+  step: text("step").notNull(),
+  /** Deposit amount queued behind the PIN step. */
+  amountUsdc: real("amount_usdc"),
+  /** Hash of the first PIN entry, held only between AWAIT_NEW_PIN and CONFIRM. */
+  tempPinHash: text("temp_pin_hash"),
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
 /** Conversation log — useful for debugging the demo. */
 export const messages = sqliteTable("messages", {
   id: text("id").primaryKey(),
@@ -70,3 +88,4 @@ export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Position = typeof positions.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type PendingAction = typeof pendingActions.$inferSelect;
