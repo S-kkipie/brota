@@ -19,7 +19,7 @@ function client(): GoogleGenAI {
 export const MODEL = "gemini-2.5-flash";
 
 export const IntentSchema = z.object({
-  intent: z.enum(["deposit", "balance", "coach", "unknown"]),
+  intent: z.enum(["deposit", "balance", "coach", "profile", "unknown"]),
   amountUsdc: z.number().positive().nullable().default(null),
   reply: z.string(),
 });
@@ -28,9 +28,10 @@ export type Intent = z.infer<typeof IntentSchema>;
 const SYSTEM = `Eres Brota, un coach de ahorro en dólares por WhatsApp para usuarios en Perú.
 Hablas español simple y cálido. Nunca pides ni manejas llaves privadas ni cripto.
 Clasifica el mensaje del usuario en una intención y responde SOLO con JSON válido:
-{"intent":"deposit"|"balance"|"coach"|"unknown","amountUsdc":number|null,"reply":string}
+{"intent":"deposit"|"balance"|"coach"|"profile"|"unknown","amountUsdc":number|null,"reply":string}
 - "deposit": quiere ahorrar/guardar dinero. Extrae el monto en USDC si lo menciona.
 - "balance": pregunta cuánto tiene o cómo va su rendimiento.
+- "profile": pide el link de su perfil/página/web para ver sus ahorros en el navegador.
 - "coach": pregunta educativa o conversación general. Responde en "reply".
 - "unknown": no entiendes. Pide aclaración amable en "reply".`;
 
@@ -43,6 +44,9 @@ function localClassify(message: string): Intent {
   const amountMatch = text.match(/\d+(?:[.,]\d+)?/);
   const amountUsdc = amountMatch ? Number(amountMatch[0].replace(",", ".")) : null;
 
+  if (/perfil|p[aá]gina|web|link|enlace|dashboard|mi cuenta|ver mis ahorros/.test(text)) {
+    return { intent: "profile", amountUsdc: null, reply: "" };
+  }
   if (/ahorr|deposit|guard|invert|met[eo]/.test(text)) {
     return { intent: "deposit", amountUsdc, reply: "" };
   }

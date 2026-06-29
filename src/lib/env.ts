@@ -15,6 +15,9 @@ export function optionalEnv(name: string, fallback = ""): string {
   return process.env[name] ?? fallback;
 }
 
+/** Public base URL used to build per-user web profile links sent by the bot. */
+export const APP_BASE_URL = optionalEnv("APP_BASE_URL", "http://localhost:3002");
+
 export const STELLAR_NETWORK = optionalEnv("STELLAR_NETWORK", "testnet");
 export const STELLAR_RPC_URL = optionalEnv(
   "STELLAR_RPC_URL",
