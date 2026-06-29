@@ -97,7 +97,7 @@ export default async function DemoPage() {
                 <div className="p-8 border-b border-slate-800 bg-slate-900/80">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-2xl font-bold">{user.whatsappNumber}</h2>
+                      <h2 className="text-2xl font-bold">{user.whatsappNumber ?? user.telegramChatId ?? "—"}</h2>
                       {wallet && (
                         <a
                           href={`${EXPLORER}/account/${wallet.stellarPublicKey}`}

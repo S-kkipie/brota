@@ -24,6 +24,10 @@ one repo / one deploy > microservices.
   stellar-sdk v12 and pulls `@soroban-react/*` React libs).
 - **Meta WhatsApp Cloud API** — inbound webhook at `src/app/api/whatsapp/route.ts`
   (GET = subscription verify, POST = inbound messages). Send via `src/lib/whatsapp.ts`.
+- **Telegram Bot API** — second inbound channel alongside WhatsApp. Webhook at
+  `src/app/api/telegram/route.ts` (POST only; no GET handshake). Send via
+  `src/lib/telegram.ts`. Both channels share `src/lib/inbound.ts` (the
+  channel-agnostic core: user lookup, PIN flow, intent dispatch).
 - **logtape `@logtape/logtape`** — all logging. No `console.log` in committed code.
 - **Tailwind + shadcn/ui + recharts** — web UI.
 - Deploy: **Railway** (`next start`, persistent Node — NOT Vercel serverless).
@@ -58,11 +62,16 @@ Package manager: **pnpm**. Node 24.
 - Do **not** claim "non-custodial" anywhere while keys live server-side. Passkey/smart-wallet
   is roadmap, not MVP.
 - **No secrets in the repo.** `GEMINI_API_KEY`, `WALLET_ENCRYPTION_KEY`, `WHATSAPP_ACCESS_TOKEN`,
-  `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, DB URL live in `.env` (gitignored) and
+  `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `TELEGRAM_BOT_TOKEN`,
+  `TELEGRAM_WEBHOOK_SECRET`, DB URL live in `.env` (gitignored) and
   Railway only. Keep `.env.example` updated with keys, no values. Never commit `local.db`.
 - **Verify inbound webhooks.** The POST handler checks Meta's `X-Hub-Signature-256` (HMAC-SHA256
   of the raw body with `WHATSAPP_APP_SECRET`). It is enforced whenever the secret is set; set it
   in every non-local deploy or the endpoint accepts unauthenticated POSTs.
+- **Telegram webhooks** use Telegram's `secret_token`: the value passed to
+  `setWebhook` is echoed in `X-Telegram-Bot-Api-Secret-Token` and compared
+  constant-time to `TELEGRAM_WEBHOOK_SECRET`. Enforced whenever the secret is set;
+  set it in every non-local deploy or the endpoint accepts unauthenticated POSTs.
 - Stellar **testnet only** until explicitly switched. Never point at mainnet in code/tests.
 
 ## Workflow
