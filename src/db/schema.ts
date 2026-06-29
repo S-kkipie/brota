@@ -15,6 +15,8 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   whatsappNumber: text("whatsapp_number").unique(),
   telegramChatId: text("telegram_chat_id").unique(),
+  /** Unguessable bearer token for the read-only web profile link (/u/<token>). Minted on demand. */
+  webToken: text("web_token").unique(),
   displayName: text("display_name"),
   /** Hash of the user's PIN (never the PIN itself). Authorizes fund moves. */
   pinHash: text("pin_hash"),
