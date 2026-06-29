@@ -10,10 +10,11 @@ import {
  *   pnpm db:generate && pnpm db:push
  */
 
-/** A person identified by their WhatsApp number. No web login in MVP. */
+/** A person identified by their WhatsApp number or Telegram chat id. No web login in MVP. */
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
-  whatsappNumber: text("whatsapp_number").notNull().unique(),
+  whatsappNumber: text("whatsapp_number").unique(),
+  telegramChatId: text("telegram_chat_id").unique(),
   displayName: text("display_name"),
   /** Hash of the user's PIN (never the PIN itself). Authorizes fund moves. */
   pinHash: text("pin_hash"),

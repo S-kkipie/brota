@@ -15,6 +15,13 @@
       "when": 1782624099081,
       "tag": "0001_gigantic_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782754696457,
+      "tag": "0002_hard_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }
