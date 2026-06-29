@@ -1,8 +1,8 @@
 "use client";
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-
-export type YieldPoint = { date: string; value: number };
+import type { YieldPoint } from "@/lib/savings";
+export type { YieldPoint };
 
 export default function YieldChart({ data }: { data: YieldPoint[] }) {
   return (
