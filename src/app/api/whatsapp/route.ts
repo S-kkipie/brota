@@ -1,16 +1,10 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { users, messages } from "@/db/schema";
-import { classifyIntent } from "@/lib/gemini";
-import { dispatch } from "@/lib/actions/dispatch";
 import { log } from "@/lib/log";
 import {
   sendWhatsAppMessage,
   verifyMetaSignature,
   isMetaSignatureConfigured,
 } from "@/lib/whatsapp";
-import { createWalletForUser } from "@/lib/wallet";
-import { continuePending } from "@/lib/conversation";
+import { handleInboundMessage } from "@/lib/inbound";
 
 export const runtime = "nodejs";
 
@@ -53,77 +47,20 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     const body = JSON.parse(rawBody);
-
-    // Check if it's a WhatsApp status update or actual message
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const messagesArray = value?.messages;
-
-    if (!messagesArray || messagesArray.length === 0) {
-      return new Response("EVENT_RECEIVED", { status: 200 });
-    }
-
-    const message = messagesArray[0];
-    const from = message.from;
-    const textBody = message.text?.body?.trim();
+    const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const from = message?.from;
+    const textBody = message?.text?.body?.trim();
 
     if (!from || !textBody) {
       return new Response("EVENT_RECEIVED", { status: 200 });
     }
 
-    log.info("inbound", { from, textBody });
-
-    // Find-or-create the user keyed by WhatsApp number.
-    let user = await db.query.users.findFirst({
-      where: eq(users.whatsappNumber, from),
+    log.info("inbound", { from, textBody, channel: "whatsapp" });
+    const reply = await handleInboundMessage({
+      channel: "whatsapp",
+      externalId: from,
+      text: textBody,
     });
-    
-    if (!user) {
-      const inserted = await db.insert(users).values({ 
-        id: "usr_" + Date.now().toString(),
-        whatsappNumber: from,
-        createdAt: new Date()
-      }).returning();
-      user = inserted[0];
-      log.info("new user", { userId: user.id });
-      // Custodial-with-limits wallet on first contact (encrypted seed at rest).
-      await createWalletForUser(user.id);
-    }
-
-    await db.insert(messages).values({ 
-      id: "msg_" + Date.now().toString(),
-      userId: user.id, 
-      direction: "in", 
-      body: textBody,
-      createdAt: new Date()
-    });
-
-    // If the user is mid-flow (e.g. entering a PIN), this message is the awaited
-    // input — handle it before classifying intent. Otherwise classify + dispatch.
-    const pendingResult = await continuePending(user, textBody);
-    let reply: string;
-    let intentName: string;
-    if (pendingResult) {
-      reply = pendingResult.reply;
-      intentName = "pin_flow";
-    } else {
-      const intent = await classifyIntent(textBody);
-      const result = await dispatch({ user, intent });
-      reply = result.reply;
-      intentName = intent.intent;
-    }
-
-    await db.insert(messages).values({
-      id: "msg_" + Date.now().toString() + "_out",
-      userId: user.id,
-      direction: "out",
-      body: reply,
-      intent: intentName,
-      createdAt: new Date()
-    });
-
-    // Send reply via Meta API
     await sendWhatsAppMessage(from, reply);
 
     return new Response("EVENT_RECEIVED", { status: 200 });
