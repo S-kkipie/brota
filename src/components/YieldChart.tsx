@@ -2,7 +2,6 @@
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { YieldPoint } from "@/lib/savings";
-export type { YieldPoint };
 
 export default function YieldChart({ data }: { data: YieldPoint[] }) {
   return (

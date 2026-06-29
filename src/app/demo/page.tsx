@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users, positions } from "@/db/schema";
+import { users } from "@/db/schema";
 import type { User } from "@/db/schema";
 import { optionalEnv } from "@/lib/env";
 import { getProfileData } from "@/lib/savings";

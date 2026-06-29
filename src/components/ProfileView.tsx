@@ -5,11 +5,7 @@ import TransactionList from "@/components/TransactionList";
 import ProfileInfo from "@/components/ProfileInfo";
 
 export default function ProfileView({ data }: { data: ProfileData }) {
-  const name =
-    data.user.displayName ??
-    data.user.whatsappNumber ??
-    data.user.telegramChatId ??
-    "Ahorrista";
+  const name = data.user.displayName ?? "Ahorrista";
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 font-sans text-slate-50 selection:bg-emerald-500/30 sm:p-8">

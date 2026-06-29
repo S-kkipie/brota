@@ -15,8 +15,7 @@ export default function ProfileInfo({
     : user.whatsappNumber
       ? "WhatsApp"
       : "—";
-  const name =
-    user.displayName ?? user.whatsappNumber ?? user.telegramChatId ?? "Ahorrista";
+  const name = user.displayName ?? "Ahorrista";
 
   return (
     <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur-xl">
