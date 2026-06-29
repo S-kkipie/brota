@@ -8,7 +8,7 @@ CREATE TABLE `__new_users` (
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO `__new_users`("id", "whatsapp_number", "telegram_chat_id", "display_name", "pin_hash", "created_at") SELECT "id", "whatsapp_number", "telegram_chat_id", "display_name", "pin_hash", "created_at" FROM `users`;--> statement-breakpoint
+INSERT INTO `__new_users`("id", "whatsapp_number", "display_name", "pin_hash", "created_at") SELECT "id", "whatsapp_number", "display_name", "pin_hash", "created_at" FROM `users`;--> statement-breakpoint
 DROP TABLE `users`;--> statement-breakpoint
 ALTER TABLE `__new_users` RENAME TO `users`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
