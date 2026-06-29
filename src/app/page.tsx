@@ -16,7 +16,7 @@ export default function Home() {
             Tu plata <span className="text-emerald-400">Brota</span> sola.
           </h1>
           <p className="mx-auto mt-8 max-w-2xl text-pretty text-lg text-slate-300">
-            Ahorra en dólares <strong>por WhatsApp</strong>, con una IA que te enseña y te acompaña.
+            Ahorra en dólares <strong>por WhatsApp y Telegram</strong>, con una IA que te enseña y te acompaña.
             La plata que guardas rinde sola mediante bóvedas DeFindex. Sin apps, sin saber cripto.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -40,10 +40,10 @@ export default function Home() {
       {/* Features Section */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pb-32">
         <div className="grid gap-8 md:grid-cols-3">
-          <FeatureCard 
+          <FeatureCard
             icon={<Bot className="h-8 w-8 text-emerald-400" />}
-            title="Coach IA en WhatsApp"
-            description="Hablas con Brota como a un amigo. La IA entiende tu intención, redacta por ti y te educa financieramente."
+            title="Coach IA en tu chat"
+            description="Hablas con Brota por WhatsApp o Telegram como a un amigo. La IA entiende tu intención, redacta por ti y te educa financieramente."
           />
           <FeatureCard 
             icon={<TrendingUp className="h-8 w-8 text-emerald-400" />}
