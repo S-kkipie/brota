@@ -2,10 +2,15 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { wallets, positions, transactions } from "@/db/schema";
 import type { User, Wallet, Position, Transaction } from "@/db/schema";
+import { STELLAR_NETWORK } from "@/lib/env";
 
 export type YieldPoint = { date: string; value: number };
 
-export const EXPLORER = "https://stellar.expert/explorer/testnet";
+/** stellar.expert network segment follows STELLAR_NETWORK so "ver tx" links resolve. */
+export const EXPLORER =
+  STELLAR_NETWORK === "mainnet"
+    ? "https://stellar.expert/explorer/public"
+    : "https://stellar.expert/explorer/testnet";
 
 export const fmtUsdc = (n: number): string =>
   n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
