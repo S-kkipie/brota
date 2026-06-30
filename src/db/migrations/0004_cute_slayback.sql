@@ -1,0 +1,1 @@
+ALTER TABLE `pending_actions` ADD `kind` text DEFAULT 'deposit' NOT NULL;

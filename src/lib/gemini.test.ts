@@ -20,3 +20,14 @@ test("local classifier still routes deposit and balance", async () => {
   assert.equal((await classifyIntent("ahorra 50")).intent, "deposit");
   assert.equal((await classifyIntent("cuánto tengo")).intent, "balance");
 });
+
+test("local classifier routes withdraw keywords to withdraw intent with amount", async () => {
+  delete process.env.GEMINI_API_KEY;
+  for (const msg of ["retira 20", "quiero sacar 15", "retírame 30 dólares"]) {
+    const intent = await classifyIntent(msg);
+    assert.equal(intent.intent, "withdraw", `expected withdraw for "${msg}"`);
+  }
+  assert.equal((await classifyIntent("retira 20")).amountUsdc, 20);
+  // Saving ("ahorra") must NOT be misread as a withdrawal.
+  assert.equal((await classifyIntent("ahorra 50")).intent, "deposit");
+});

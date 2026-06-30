@@ -68,7 +68,9 @@ export const pendingActions = sqliteTable("pending_actions", {
   userId: text("user_id").notNull().unique().references(() => users.id),
   /** 'AWAIT_NEW_PIN' | 'CONFIRM_NEW_PIN' | 'AWAIT_PIN' */
   step: text("step").notNull(),
-  /** Deposit amount queued behind the PIN step. */
+  /** Which fund move is queued behind the PIN step: 'deposit' | 'withdraw'. */
+  kind: text("kind").notNull().default("deposit"),
+  /** Amount (USDC) queued behind the PIN step. */
   amountUsdc: real("amount_usdc"),
   /** Hash of the first PIN entry, held only between AWAIT_NEW_PIN and CONFIRM. */
   tempPinHash: text("temp_pin_hash"),

@@ -3,12 +3,28 @@ import { db } from "@/lib/db";
 import { users } from "@/db/schema";
 import type { User } from "@/db/schema";
 import { getPending, setPending, clearPending } from "@/lib/pending";
+import type { PendingKind } from "@/lib/pending";
 import { hashPin, verifyPin, isValidPin } from "@/lib/pin";
 import { executeDeposit } from "@/lib/actions/deposit";
+import { executeWithdraw } from "@/lib/actions/withdraw";
 import type { ActionResult } from "@/lib/actions/types";
 import { log } from "@/lib/log";
 
 const MAX_ATTEMPTS = 3;
+
+/**
+ * Run the fund move queued behind the PIN step. `kind` comes from the DB (a
+ * plain text column), so anything that is not "withdraw" defaults to deposit.
+ */
+function runQueuedAction(
+  kind: string,
+  user: User,
+  amountUsdc: number,
+): Promise<ActionResult> {
+  return kind === "withdraw"
+    ? executeWithdraw(user, amountUsdc)
+    : executeDeposit(user, amountUsdc);
+}
 
 /**
  * If the user is mid-flow (e.g. entering a PIN), consume this message as the
@@ -24,6 +40,7 @@ export async function continuePending(
 
   const input = text.trim();
   const amountUsdc = pending.amountUsdc;
+  const kind = pending.kind;
 
   switch (pending.step) {
     case "AWAIT_NEW_PIN": {
@@ -32,6 +49,7 @@ export async function continuePending(
       }
       await setPending(user.id, {
         step: "CONFIRM_NEW_PIN",
+        kind: kind === "withdraw" ? "withdraw" : "deposit",
         amountUsdc,
         tempPinHash: hashPin(input),
       });
@@ -43,7 +61,7 @@ export async function continuePending(
         return retryOrCancel(
           user.id,
           pending.attempts,
-          { step: "AWAIT_NEW_PIN", amountUsdc },
+          { step: "AWAIT_NEW_PIN", kind, amountUsdc },
           "No coincidió. Escríbeme tu nuevo PIN de 4 dígitos otra vez.",
           "No logramos crear tu PIN. Empecemos de nuevo cuando quieras.",
         );
@@ -56,7 +74,7 @@ export async function continuePending(
       log.info("pin set", { userId: user.id });
 
       if (amountUsdc) {
-        return executeDeposit({ ...user, pinHash: pending.tempPinHash }, amountUsdc);
+        return runQueuedAction(kind, { ...user, pinHash: pending.tempPinHash }, amountUsdc);
       }
       return { reply: "Tu PIN quedó listo ✅" };
     }
@@ -66,14 +84,14 @@ export async function continuePending(
         return retryOrCancel(
           user.id,
           pending.attempts,
-          { step: "AWAIT_PIN", amountUsdc },
+          { step: "AWAIT_PIN", kind, amountUsdc },
           "PIN incorrecto. Inténtalo de nuevo.",
           "Demasiados intentos. Cancelé la operación por seguridad.",
         );
       }
       await clearPending(user.id);
       if (!amountUsdc) return { reply: "PIN correcto ✅" };
-      return executeDeposit(user, amountUsdc);
+      return runQueuedAction(kind, user, amountUsdc);
     }
 
     default:
@@ -85,7 +103,11 @@ export async function continuePending(
 async function retryOrCancel(
   userId: string,
   attempts: number,
-  retryState: { step: "AWAIT_NEW_PIN" | "AWAIT_PIN"; amountUsdc: number | null },
+  retryState: {
+    step: "AWAIT_NEW_PIN" | "AWAIT_PIN";
+    kind: string;
+    amountUsdc: number | null;
+  },
   retryMsg: string,
   cancelMsg: string,
 ): Promise<ActionResult> {
@@ -93,6 +115,12 @@ async function retryOrCancel(
     await clearPending(userId);
     return { reply: cancelMsg };
   }
-  await setPending(userId, { ...retryState, attempts: attempts + 1 });
+  const kind: PendingKind = retryState.kind === "withdraw" ? "withdraw" : "deposit";
+  await setPending(userId, {
+    step: retryState.step,
+    kind,
+    amountUsdc: retryState.amountUsdc,
+    attempts: attempts + 1,
+  });
   return { reply: retryMsg };
 }

@@ -29,6 +29,13 @@
       "when": 1782772381517,
       "tag": "0003_cheerful_steel_serpent",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1782782462980,
+      "tag": "0004_cute_slayback",
+      "breakpoints": true
     }
   ]
 }

@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
 import { Keypair } from "@stellar/stellar-sdk";
 import { db } from "@/lib/db";
-import { transactions, positions } from "@/db/schema";
+import { transactions } from "@/db/schema";
 import type { User } from "@/db/schema";
 import { decryptSecret } from "@/lib/crypto";
 import { ensureWalletForUser } from "@/lib/wallet";
 import { depositToVault, getVaultPosition } from "@/lib/defindex";
 import { requireEnv } from "@/lib/env";
 import { setPending } from "@/lib/pending";
+import { upsertPosition } from "@/lib/position-snapshot";
 import { log } from "@/lib/log";
 import type { ActionContext, ActionResult } from "@/lib/actions/types";
 
@@ -78,30 +78,4 @@ export async function executeDeposit(
       `Tu saldo actual es ${position.valueUsdc.toFixed(2)} USDC. ` +
       `Escribe "saldo" cuando quieras ver cómo crece.`,
   };
-}
-
-async function upsertPosition(
-  userId: string,
-  vaultId: string,
-  shares: number,
-  valueUsdc: number,
-): Promise<void> {
-  const existing = await db.query.positions.findFirst({
-    where: and(eq(positions.userId, userId), eq(positions.vaultId, vaultId)),
-  });
-  if (existing) {
-    await db
-      .update(positions)
-      .set({ shares, lastValueUsdc: valueUsdc, updatedAt: new Date() })
-      .where(eq(positions.id, existing.id));
-    return;
-  }
-  await db.insert(positions).values({
-    id: `pos_${randomUUID()}`,
-    userId,
-    vaultId,
-    shares,
-    lastValueUsdc: valueUsdc,
-    updatedAt: new Date(),
-  });
 }
