@@ -1,7 +1,12 @@
-import { Keypair, rpc, Networks } from "@stellar/stellar-sdk";
+import { Keypair, rpc, Horizon, Networks } from "@stellar/stellar-sdk";
 
 export const rpcServer = new rpc.Server(
   process.env.STELLAR_RPC_URL || "https://soroban-testnet.stellar.org",
+);
+
+/** Classic Horizon server — used for account existence checks and trustlines. */
+export const horizonServer = new Horizon.Server(
+  process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org",
 );
 
 export const networkPassphrase =
